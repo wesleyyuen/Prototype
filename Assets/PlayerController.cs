@@ -8,6 +8,7 @@ using UnityEngine.InputSystem;
 public class PlayerController : MonoBehaviour
 {
     [SerializeField] private float _speed;
+    [SerializeField] private float _interactDistance;
     
     [SerializeField] private Camera _playerCamera;
     [SerializeField] private CinemachineInputAxisController _playerControl;
@@ -19,8 +20,8 @@ public class PlayerController : MonoBehaviour
     private PanelControl _currPanel;
     private Vector2 _movementInput;
 
-    private Rigidbody _rigidbody;
-    private CinemachineBrain _cinemachineBrain;
+    [SerializeField, HideInInspector] private Rigidbody _rigidbody;
+    [SerializeField, HideInInspector] private CinemachineBrain _cinemachineBrain;
 
     private void OnValidate()
     {
@@ -35,8 +36,8 @@ public class PlayerController : MonoBehaviour
     
     public void OnInteract()
     {
-        Debug.DrawRay(_playerCamera.transform.position, OrientationForward * 10f, Color.magenta, 10f);
-        if (Physics.Raycast(_playerCamera.transform.position, _playerCamera.transform.forward, out RaycastHit hit, 10f, _screenLayer))
+        Debug.DrawRay(_playerCamera.transform.position, OrientationForward * _interactDistance, Color.magenta, 5f);
+        if (Physics.Raycast(_playerCamera.transform.position, _playerCamera.transform.forward, out RaycastHit hit, _interactDistance, _screenLayer))
         {
             if (hit.transform.TryGetComponent(out PanelControl panel))
             {
@@ -70,11 +71,7 @@ public class PlayerController : MonoBehaviour
         {
             Move();
         }
-    }
-
-    private void LateUpdate()
-    {
-        // rotate player to match camera rotation
+        
         transform.localRotation = Quaternion.Euler(transform.localRotation.eulerAngles.x, _playerCamera.transform.localRotation.eulerAngles.y, transform.localRotation.eulerAngles.z);
     }
 
