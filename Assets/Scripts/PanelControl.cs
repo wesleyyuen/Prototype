@@ -1,20 +1,20 @@
 using Unity.Cinemachine;
 using UnityEngine;
 
-public class PanelControl : MonoBehaviour
+public class PanelControl : MonoBehaviour, IInteractable
 {
     [SerializeField] private CinemachineCamera _screenCam;
-    [SerializeField] private CinemachineInputAxisController _unitControl;
+    [SerializeField] private UnitController _unitController;
     
-    public void ActivateControl()
+    public void Interact(GameObject interactor)
     {
         _screenCam.Priority.Value = 1;
-        _unitControl.enabled = true;
+        _unitController.BeginControl();
     }
 
     public void DeactivateControl()
     {
         _screenCam.Priority.Value = 0;
-        _unitControl.enabled = false;
+        _unitController.ExitControl();
     }
 }

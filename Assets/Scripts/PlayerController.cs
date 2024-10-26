@@ -11,7 +11,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float _interactDistance;
     
     [SerializeField] private Camera _playerCamera;
-    [SerializeField] private CinemachineInputAxisController _playerControl;
+    [SerializeField] private CinemachineInputAxisController _playerCameraControl;
     [SerializeField] private LayerMask _screenLayer;
 
     private Vector3 OrientationForward => _playerCamera.transform.forward;
@@ -20,13 +20,25 @@ public class PlayerController : MonoBehaviour
     private PanelControl _currPanel;
     private Vector2 _movementInput;
 
+    [SerializeField, HideInInspector] private PlayerInput _playerInput;
     [SerializeField, HideInInspector] private Rigidbody _rigidbody;
     [SerializeField, HideInInspector] private CinemachineBrain _cinemachineBrain;
 
     private void OnValidate()
     {
+        _playerInput = GetComponent<PlayerInput>();
         _rigidbody = GetComponent<Rigidbody>();
         _cinemachineBrain = _playerCamera.GetComponent<CinemachineBrain>();
+    }
+
+    private void OnEnable()
+    {
+        UnitController.Event_ExitUnitControl += OnExitUnitControl;
+    }
+
+    private void OnDisable()
+    {
+        UnitController.Event_ExitUnitControl -= OnExitUnitControl;
     }
 
     public void OnMove(InputValue inputValue)
@@ -37,31 +49,29 @@ public class PlayerController : MonoBehaviour
     public void OnInteract()
     {
         Debug.DrawRay(_playerCamera.transform.position, OrientationForward * _interactDistance, Color.magenta, 5f);
-        if (Physics.Raycast(_playerCamera.transform.position, _playerCamera.transform.forward, out RaycastHit hit, _interactDistance, _screenLayer))
+        if (Physics.Raycast(_playerCamera.transform.position, OrientationForward, out RaycastHit hit, _interactDistance, _screenLayer))
         {
+            // TODO: get IInteractable instead?
             if (hit.transform.TryGetComponent(out PanelControl panel))
             {
                 _currPanel = panel;
-                _playerControl.enabled = false;
-                panel.ActivateControl();
+                EnableControl(false);
+                panel.Interact(gameObject);
             }
         }
     }
-
-    public void OnExit()
+    
+    private void OnExitUnitControl()
     {
-        if (!_currPanel) return;
-
         StartCoroutine(EnablePlayerControlAfterSeconds(_cinemachineBrain.DefaultBlend.Time));
         _currPanel.DeactivateControl();
-        
     }
 
     private IEnumerator EnablePlayerControlAfterSeconds(float delay)
     {
         yield return new WaitForSeconds(delay);
-        
-        _playerControl.enabled = true;
+
+        EnableControl(true);
         _currPanel = null;
     }
 
@@ -80,5 +90,11 @@ public class PlayerController : MonoBehaviour
         Vector3 movementDirection = OrientationRight * _movementInput.x + OrientationForward * _movementInput.y;
         Vector2 movementVector = new Vector2(movementDirection.x, movementDirection.z).normalized * (_speed * Time.fixedDeltaTime);
         _rigidbody.linearVelocity = new Vector3(movementVector.x, 0, movementVector.y);
+    }
+    
+    private void EnableControl(bool shouldEnable)
+    {
+        _playerInput.enabled = shouldEnable;
+        _playerCameraControl.enabled = shouldEnable;
     }
 }
